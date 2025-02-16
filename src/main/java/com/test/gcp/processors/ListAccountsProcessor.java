@@ -16,7 +16,7 @@ public class ListAccountsProcessor implements ISigningProcessor {
 	DesktopAppConfig desktopAppConfig;
 
 	@Override
-	public void process(DesktopAppConfig desktopAppConfig) {
+	public void process() {
 		System.out.println("Running list keys call.");
 
 		List<ServiceAccountKey> keysList = GCPAccessKeysUtil.listKeys(desktopAppConfig);

@@ -14,17 +14,17 @@ public class SigningOperation {
 	private String gcsBucket = null;
 	private String gcsObjectPath = null;
 
-	public enum OperationModes {
-		LIST_KEYS("LIST_KEYS"),
-		LIST_HMAC_KAYS("LIST_HMAC_KAYS"),
+	public enum OperationMode {
+		LIST_KEYS("LIST_KEYS"), 
+		LIST_HMAC_KEYS("LIST_HMAC_KAYS"), 
 		GEN_RSA_KEY("GEN_RSA_KEY"),
-		GEN_HMAC_KEY("GEN_HMAC_KEY"),
+		GEN_HMAC_KEY("GEN_HMAC_KEY"), 
 		DEACTIVATE_RSA_KEY("DEACTIVATE_RSA_KEY"),
 		DEACTIVATE_HMAC_KEY("DEACTIVATE_HMAC_KEY");
 
 		private final String configString;
 
-		OperationModes(final String configString) {
+		OperationMode(final String configString) {
 			this.configString = configString;
 		}
 
@@ -34,9 +34,11 @@ public class SigningOperation {
 		}
 	};
 
-	public OperationModes toOperationMode() {
-		if (operationMode.equalsIgnoreCase(OperationModes.LIST_KEYS.toString())) {
-			return OperationModes.LIST_KEYS;
+	public OperationMode toOperationMode() {
+		for (OperationMode curOpMode : OperationMode.values()) {
+			if (operationMode.equalsIgnoreCase(curOpMode.toString())) {
+				return curOpMode;
+			}
 		}
 
 		throw new RuntimeException("Failed to decode configured SigningOperation config setting.");
@@ -44,8 +46,8 @@ public class SigningOperation {
 
 	public static boolean isMatchEnumValue(String compareStr) {
 		if (compareStr != null && !compareStr.isEmpty()) {
-			for (OperationModes curAppMode : OperationModes.values()) {
-				if (compareStr.equalsIgnoreCase(curAppMode.toString())) {
+			for (OperationMode curOpMode : OperationMode.values()) {
+				if (compareStr.equalsIgnoreCase(curOpMode.toString())) {
 					return true;
 				}
 			}

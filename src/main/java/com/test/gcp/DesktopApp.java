@@ -28,7 +28,7 @@ public class DesktopApp {
 			System.out.printf("Starting operation #%d as %s%n", curProcessorRunCount,
 					signingProcessor.getSelfDescription());
 
-			signingProcessor.process(desktopAppConfig);
+			signingProcessor.process();
 
 			System.out.printf("Completed operation #%d as %s%n", curProcessorRunCount,
 					signingProcessor.getSelfDescription());
