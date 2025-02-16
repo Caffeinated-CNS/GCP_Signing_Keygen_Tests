@@ -22,22 +22,19 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageException;
 import com.google.cloud.storage.StorageOptions;
+import com.test.gcp.config.ConfigLoader;
+import com.test.gcp.config.DesktopAppConfig;
 
-/**
- * Hello world!
- *
- */
-public class App {
+public class DesktopApp {
 	private final static String APP_NAME = "com.test.gcp.GCP_Signing_Keygen_Tests/0.1";
+	private final static String DESKTOP_APP_CONFIG = "./configs/DesktopApp.yaml";
 
 	public static void main(String[] args) throws IOException {
-		// GCP project id
-		String projectId = "gcp-project12345678";
+		DesktopAppConfig desktopAppConfig = ConfigLoader.loadBasicYAMLConfig(DESKTOP_APP_CONFIG,
+				DesktopAppConfig.class);
 
-		// GCP Service account with appropriate permissions
-		String serviceAccountName = "sa-account-name";
-
-		List<ServiceAccountKey> keysList = listKeys(projectId, serviceAccountName);
+		List<ServiceAccountKey> keysList = listKeys(desktopAppConfig.getGcpProjectId(),
+				desktopAppConfig.getSaAccountName());
 
 		keysList.forEach(sak -> {
 			try {
