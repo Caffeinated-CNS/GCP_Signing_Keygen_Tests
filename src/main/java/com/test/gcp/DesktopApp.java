@@ -1,23 +1,9 @@
 package com.test.gcp;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.googleapis.services.AbstractGoogleClientRequest;
-import com.google.api.client.googleapis.services.GoogleClientRequestInitializer;
-import com.google.api.client.http.HttpHeaders;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.services.iam.v1.Iam;
-import com.google.api.services.iam.v1.model.ListServiceAccountKeysResponse;
-import com.google.api.services.iam.v1.model.ServiceAccountKey;
-import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
@@ -25,90 +11,34 @@ import com.google.cloud.storage.StorageException;
 import com.google.cloud.storage.StorageOptions;
 import com.test.gcp.config.ConfigLoader;
 import com.test.gcp.config.DesktopAppConfig;
+import com.test.gcp.processors.ISigningProcessor;
+import com.test.gcp.processors.ProcessorFactory;
 
 public class DesktopApp {
-	private final static String APP_NAME = "com.test.gcp.GCP_Signing_Keygen_Tests/0.1";
 	private final static String DESKTOP_APP_CONFIG = "./configs/DesktopApp.yaml";
+	static int curProcessorRunCount = 0;
 
 	public static void main(String[] args) throws IOException {
 		DesktopAppConfig desktopAppConfig = ConfigLoader.loadBasicYAMLConfig(DESKTOP_APP_CONFIG,
 				DesktopAppConfig.class);
 
-		List<ServiceAccountKey> keysList = listKeys(desktopAppConfig);
+		desktopAppConfig.getSigningOperations().forEach(curSigningOp -> {
+			ISigningProcessor signingProcessor = ProcessorFactory.getSigningProcessor(curSigningOp, desktopAppConfig);
 
-		keysList.forEach(sak -> {
-			try {
-				System.out.println("\n" + sak.toPrettyString());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			System.out.printf("Starting operation #%d as %s%n", curProcessorRunCount,
+					signingProcessor.getSelfDescription());
+
+			signingProcessor.process(desktopAppConfig);
+
+			System.out.printf("Completed operation #%d as %s%n", curProcessorRunCount,
+					signingProcessor.getSelfDescription());
+
+			curProcessorRunCount++;
 		});
+
 	}
 
 	// Creates a key for a service account.
-	public static List<ServiceAccountKey> listKeys(DesktopAppConfig desktopAppConfig) {
-		String email = String.format("%s@%s.iam.gserviceaccount.com", desktopAppConfig.getSaAccountName(),
-				desktopAppConfig.getGcpProjectId());
-		String resourcePath = String.format("projects/%s/serviceAccounts/%s", desktopAppConfig.getGcpProjectId(),
-				email);
-
-		// Initialize client that will be used to send requests.
-		// This client only needs to be created once, and can be reused for multiple
-		// requests.
-		try {
-			HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-			JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
-			final String access_token = genGCPAccessToken(desktopAppConfig);
-
-			Iam iam = new Iam.Builder(httpTransport, jsonFactory, null).setApplicationName(APP_NAME)
-					.setGoogleClientRequestInitializer(new GoogleClientRequestInitializer() {
-
-						@Override
-						public void initialize(AbstractGoogleClientRequest<?> request) throws IOException {
-
-							HttpHeaders httpHeaders = request.getRequestHeaders();
-							httpHeaders.put("Authorization", "Bearer " + access_token);
-							request.setRequestHeaders(httpHeaders);
-						}
-					}).build();
-
-			Iam.Projects.ServiceAccounts.Keys.List request = iam.projects().serviceAccounts().keys().list(resourcePath);
-			ListServiceAccountKeysResponse response = request.execute();
-
-			return response.getKeys();
-//			ServiceAccountKey sak = iam.projects().serviceAccounts().keys().get(resourcePath + "/keys").execute();
-//
-//			System.out.println("\n\n" + sak.toPrettyString());
-//			
-//			return null;
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			throw new RuntimeException(ex);
-		}
-	}
-
-	private static String genGCPAccessToken(DesktopAppConfig desktopAppConfig) {
-		GoogleCredentials credentials;
-
-		try {
-			// Load config for access token to be provided to GCP IAM Credentials API
-			if (desktopAppConfig.getAccessTokenPath() != null) {
-				credentials = GoogleCredentials.fromStream(new FileInputStream(desktopAppConfig.getAccessTokenPath()));
-			} else {
-				credentials = GoogleCredentials.getApplicationDefault();
-			}
-
-			if (credentials.createScopedRequired()) {
-				credentials = credentials.createScoped(Arrays.asList("https://www.googleapis.com/auth/cloud-platform"));
-			}
-
-			credentials.refreshIfExpired();
-
-			return credentials.getAccessToken().getTokenValue();
-		} catch (IOException ex) {
-			throw new RuntimeException("Failed to setup GoogleCredentials to make requests from GCP IAM API.", ex);
-		}
-	}
 
 	/**
 	 * Signing a URL requires Credentials which implement ServiceAccountSigner.
