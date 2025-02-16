@@ -1,3 +1,10 @@
 ---
 gcpProjectId: "gcp-project-12345678"
 saAccountName: "sa-name"
+# Not setting accessTokenPath will attempt to run the app with Application Default credentials
+# The SA json key file can be generated via:
+#   gcloud iam service-accounts keys create "C:\Cloud SDK\\keys\sa-name.json" --iam-account=sa-name@gcp-project-12345678.iam.gserviceaccount.com
+#
+# The SA will need to have:
+#   roles/iam.serviceAccountViewer role or iam.serviceAccountKeys.list permission to list keys.
+# accessTokenPath: "C:\\Cloud SDK\\keys\\sa-name.json"

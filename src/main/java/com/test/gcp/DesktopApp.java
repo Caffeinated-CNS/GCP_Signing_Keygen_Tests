@@ -1,5 +1,6 @@
 package com.test.gcp;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
@@ -33,8 +34,7 @@ public class DesktopApp {
 		DesktopAppConfig desktopAppConfig = ConfigLoader.loadBasicYAMLConfig(DESKTOP_APP_CONFIG,
 				DesktopAppConfig.class);
 
-		List<ServiceAccountKey> keysList = listKeys(desktopAppConfig.getGcpProjectId(),
-				desktopAppConfig.getSaAccountName());
+		List<ServiceAccountKey> keysList = listKeys(desktopAppConfig);
 
 		keysList.forEach(sak -> {
 			try {
@@ -46,9 +46,11 @@ public class DesktopApp {
 	}
 
 	// Creates a key for a service account.
-	public static List<ServiceAccountKey> listKeys(String projectId, String accountName) {
-		String email = String.format("%s@%s.iam.gserviceaccount.com", accountName, projectId);
-		String resourcePath = String.format("projects/%s/serviceAccounts/%s", projectId, email);
+	public static List<ServiceAccountKey> listKeys(DesktopAppConfig desktopAppConfig) {
+		String email = String.format("%s@%s.iam.gserviceaccount.com", desktopAppConfig.getSaAccountName(),
+				desktopAppConfig.getGcpProjectId());
+		String resourcePath = String.format("projects/%s/serviceAccounts/%s", desktopAppConfig.getGcpProjectId(),
+				email);
 
 		// Initialize client that will be used to send requests.
 		// This client only needs to be created once, and can be reused for multiple
@@ -56,16 +58,7 @@ public class DesktopApp {
 		try {
 			HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 			JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
-
-			GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
-
-			if (credentials.createScopedRequired()) {
-				credentials = credentials.createScoped(Arrays.asList("https://www.googleapis.com/auth/cloud-platform"));
-			}
-
-			credentials.refreshIfExpired();
-
-			final String access_token = credentials.getAccessToken().getTokenValue();
+			final String access_token = genGCPAccessToken(desktopAppConfig);
 
 			Iam iam = new Iam.Builder(httpTransport, jsonFactory, null).setApplicationName(APP_NAME)
 					.setGoogleClientRequestInitializer(new GoogleClientRequestInitializer() {
@@ -91,6 +84,29 @@ public class DesktopApp {
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			throw new RuntimeException(ex);
+		}
+	}
+
+	private static String genGCPAccessToken(DesktopAppConfig desktopAppConfig) {
+		GoogleCredentials credentials;
+
+		try {
+			// Load config for access token to be provided to GCP IAM Credentials API
+			if (desktopAppConfig.getAccessTokenPath() != null) {
+				credentials = GoogleCredentials.fromStream(new FileInputStream(desktopAppConfig.getAccessTokenPath()));
+			} else {
+				credentials = GoogleCredentials.getApplicationDefault();
+			}
+
+			if (credentials.createScopedRequired()) {
+				credentials = credentials.createScoped(Arrays.asList("https://www.googleapis.com/auth/cloud-platform"));
+			}
+
+			credentials.refreshIfExpired();
+
+			return credentials.getAccessToken().getTokenValue();
+		} catch (IOException ex) {
+			throw new RuntimeException("Failed to setup GoogleCredentials to make requests from GCP IAM API.", ex);
 		}
 	}
 
