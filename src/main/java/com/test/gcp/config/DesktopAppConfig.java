@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
 @Data
-@NoArgsConstructor
+@NoArgsConstructor(staticName="of")
 public class DesktopAppConfig {
 
 	// GCP project id to query against.

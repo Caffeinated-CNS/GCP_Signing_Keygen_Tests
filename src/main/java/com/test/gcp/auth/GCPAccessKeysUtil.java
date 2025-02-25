@@ -28,7 +28,7 @@ public class GCPAccessKeysUtil {
 		try {
 			HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 			JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
-			final String access_token = GCPAccessTokenUtils.genGCPAccessToken(desktopAppConfig);
+			final String access_token = GCPAccessTokenUtils.genGCPAccessTokenString(desktopAppConfig);
 
 			Iam iam = new Iam.Builder(httpTransport, jsonFactory, null)
 					.setApplicationName(desktopAppConfig.getAppName())

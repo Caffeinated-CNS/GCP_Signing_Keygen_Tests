@@ -1,7 +1,7 @@
 package com.test.gcp.processors;
 
 import com.test.gcp.config.DesktopAppConfig;
-import com.test.gcp.config.SigningOperation.OperationMode;
+import com.test.gcp.config.OperationMode;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
